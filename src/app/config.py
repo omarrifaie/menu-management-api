@@ -18,6 +18,8 @@ from typing import Literal
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+DEFAULT_JWT_SECRET = "dev-only-secret-do-not-use-in-production"
+
 
 class Settings(BaseSettings):
     """Strongly-typed view of the process environment."""
@@ -35,7 +37,7 @@ class Settings(BaseSettings):
     database_url: str = Field(default="sqlite:///./menu.db")
 
     # ---- JWT --------------------------------------------------------------
-    jwt_secret: str = Field(default="dev-only-secret-do-not-use-in-production")
+    jwt_secret: str = Field(default=DEFAULT_JWT_SECRET)
     jwt_algorithm: Literal["HS256"] = "HS256"
     jwt_expire_minutes: int = 60
 

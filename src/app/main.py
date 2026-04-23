@@ -11,6 +11,7 @@ from fastapi import FastAPI
 
 from app import __version__
 from app.auth.router import router as auth_router
+from app.config import DEFAULT_JWT_SECRET, get_settings
 from app.routers.categories import router as categories_router
 from app.routers.menu_items import router as menu_items_router
 from app.routers.menus import router as menus_router
@@ -74,12 +75,31 @@ environment variable.
 """
 
 
+def _guard_against_default_secret_in_production() -> None:
+    """Refuse to start if a real DB is paired with the dev JWT secret.
+
+    SQLite is the zero-setup local default, so we allow the dev secret
+    there. Any other driver (Postgres, MySQL, …) almost certainly means
+    a real deployment — shipping with the committed default would let
+    anyone mint valid admin tokens.
+    """
+    settings = get_settings()
+    if not settings.is_sqlite and settings.jwt_secret == DEFAULT_JWT_SECRET:
+        raise RuntimeError(
+            "JWT_SECRET is set to the dev default while DATABASE_URL points at "
+            "a non-SQLite database. Refusing to start. Generate a real secret "
+            "with: python -c \"import secrets; print(secrets.token_urlsafe(48))\""
+        )
+
+
 def create_app() -> FastAPI:
     """Build the FastAPI application.
 
     Separating this into a factory makes test fixtures simpler — they can
     construct their own app bound to an in-memory database.
     """
+    _guard_against_default_secret_in_production()
+
     app = FastAPI(
         title="Menu Management API",
         version=__version__,

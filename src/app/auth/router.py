@@ -40,6 +40,15 @@ def register(
       an account with any role. This is intended for local demos only.
     * Otherwise, the caller must present a valid admin JWT — admins
       provision all users in production.
+
+    Status code note: when registration is restricted, **anonymous**
+    callers get a **403** (authenticated but lacking the admin role is
+    the same shape as "no auth at all" for this route — there is no
+    legitimate unauthenticated path). Callers presenting an **expired
+    or otherwise invalid** JWT get a **401** from the token dependency
+    before this handler runs. This asymmetry is intentional: 401 tells
+    the client to refresh its token, 403 tells it the answer won't
+    change without different credentials.
     """
     if not settings.dev_allow_open_registration:
         # Hand-rolled auth check so we can give a clean 403 rather than
