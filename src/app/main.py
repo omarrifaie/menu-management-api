@@ -108,6 +108,7 @@ def create_app() -> FastAPI:
         openapi_tags=TAG_METADATA,
         contact={"name": "Omar Rifaie"},
         license_info={"name": "MIT", "identifier": "MIT"},
+        debug=get_settings().app_debug,
     )
 
     app.include_router(auth_router)

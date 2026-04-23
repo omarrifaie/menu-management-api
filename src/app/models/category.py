@@ -16,7 +16,7 @@ class Category(Base):
     display_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
-    items: Mapped[list["MenuItem"]] = relationship(  # noqa: F821
+    items: Mapped[list[MenuItem]] = relationship(  # noqa: F821
         back_populates="category",
         cascade="all, delete-orphan",
         lazy="selectin",

@@ -1,5 +1,7 @@
 # Menu Management API
 
+[![Tests passing](https://github.com/omarrifaie/menu-management-api/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/omarrifaie/menu-management-api/actions/workflows/ci.yml)
+
 A FastAPI REST service for managing restaurant menus — categories, menu
 items, prices, and versioned menu snapshots — with role-based JWT auth
 and an OpenAPI-documented surface. Built as a portfolio project.
@@ -97,14 +99,20 @@ pip install -e ".[dev]"
 cp .env.example .env                # edit JWT_SECRET before anything real
 
 # 3. Apply the initial migration to a fresh SQLite DB
-alembic upgrade head
+alembic upgrade head                # reads DATABASE_URL from your .env — no need to edit alembic.ini
 
 # 4. Seed demo data (admin + staff user, categories, items, a published menu)
-python -m scripts.seed
+python -m scripts.seed              # pass --reset to wipe and reseed
 
 # 5. Serve
+python -m scripts.serve             # honors APP_HOST / APP_PORT / APP_DEBUG
+# ...or run uvicorn directly:
 uvicorn app.main:app --reload
 ```
+
+`alembic/env.py` resolves `sqlalchemy.url` from `Settings` at runtime, so
+configuring `DATABASE_URL` in `.env` is all that's needed — `alembic.ini`
+is intentionally left blank for that field.
 
 Then open **http://localhost:8000/docs** and authorize with the
 credentials printed by the seed script.

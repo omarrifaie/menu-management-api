@@ -37,7 +37,7 @@ class Menu(Base):
         nullable=False,
     )
 
-    entries: Mapped[list["MenuItemInMenu"]] = relationship(
+    entries: Mapped[list[MenuItemInMenu]] = relationship(
         back_populates="menu",
         cascade="all, delete-orphan",
         lazy="selectin",
@@ -81,5 +81,5 @@ class MenuItemInMenu(Base):
     )
 
     menu: Mapped[Menu] = relationship(back_populates="entries")
-    menu_item: Mapped["MenuItem"] = relationship(lazy="joined")  # noqa: F821
-    price: Mapped["Price"] = relationship(lazy="joined")  # noqa: F821
+    menu_item: Mapped[MenuItem] = relationship(lazy="joined")  # noqa: F821
+    price: Mapped[Price] = relationship(lazy="joined")  # noqa: F821

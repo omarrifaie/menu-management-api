@@ -7,7 +7,7 @@ new row, which automatically closes the previous one by stamping its
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -71,7 +71,7 @@ def create_price(
     if item is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Menu item not found")
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     open_price = db.scalar(
         select(Price)

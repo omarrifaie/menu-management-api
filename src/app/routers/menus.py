@@ -7,7 +7,7 @@ prices even after those prices are later superseded.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -116,7 +116,7 @@ def publish_menu(
     menu = Menu(
         name=payload.name,
         version=next_version,
-        published_at=datetime.now(timezone.utc),
+        published_at=datetime.now(UTC),
         created_by=admin.id,
     )
     db.add(menu)
@@ -168,7 +168,7 @@ def archive_menu(
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Menu not found")
     if menu.archived_at is not None:
         raise HTTPException(status.HTTP_409_CONFLICT, "Menu is already archived")
-    menu.archived_at = datetime.now(timezone.utc)
+    menu.archived_at = datetime.now(UTC)
     db.commit()
     db.refresh(menu)
     return MenuRead.model_validate(menu)

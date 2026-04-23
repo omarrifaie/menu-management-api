@@ -40,7 +40,7 @@ class Price(Base):
         nullable=False,
     )
 
-    menu_item: Mapped["MenuItem"] = relationship(back_populates="prices")  # noqa: F821
+    menu_item: Mapped[MenuItem] = relationship(back_populates="prices")  # noqa: F821
 
     __table_args__ = (
         # Helps the "give me the current price for each item" query.

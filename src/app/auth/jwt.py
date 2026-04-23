@@ -11,7 +11,7 @@ payload carries:
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from jose import JWTError, jwt
@@ -30,7 +30,7 @@ def create_access_token(*, user_id: int, role: str, settings: Settings) -> tuple
     the expiry to the client without re-decoding the token.
     """
     expires_in = settings.jwt_expire_minutes * 60
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     payload: dict[str, Any] = {
         "sub": str(user_id),
         "role": role,

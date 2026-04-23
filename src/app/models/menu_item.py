@@ -30,11 +30,11 @@ class MenuItem(Base):
         default=utcnow,
     )
 
-    category: Mapped["Category"] = relationship(  # noqa: F821
+    category: Mapped[Category] = relationship(  # noqa: F821
         back_populates="items",
         lazy="joined",
     )
-    prices: Mapped[list["Price"]] = relationship(  # noqa: F821
+    prices: Mapped[list[Price]] = relationship(  # noqa: F821
         back_populates="menu_item",
         cascade="all, delete-orphan",
         order_by="Price.effective_from.desc()",

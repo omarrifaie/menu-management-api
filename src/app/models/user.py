@@ -11,7 +11,12 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.models.base import Base, utcnow
 
 
-class UserRole(str, enum.Enum):
+# Intentionally `(str, enum.Enum)` rather than `enum.StrEnum` (UP042 off):
+# Pydantic's validation of role values via this class is already
+# well-tested; switching the base class would subtly change __str__ /
+# equality semantics and is not worth the churn. Revisit when bumping
+# the minimum Python version.
+class UserRole(str, enum.Enum):  # noqa: UP042
     """Application roles.
 
     Stored as a string in the database so values remain human-readable in

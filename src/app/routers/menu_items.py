@@ -142,9 +142,9 @@ def delete_item(
     db.delete(item)
     try:
         db.commit()
-    except Exception:
+    except Exception as exc:
         db.rollback()
         raise HTTPException(
             status.HTTP_409_CONFLICT,
             "Menu item is referenced by one or more menu snapshots; deactivate instead",
-        )
+        ) from exc
