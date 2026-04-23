@@ -185,7 +185,7 @@ pytest --cov=src/app            # with coverage
 
 The test suite covers auth happy path + credential failures + expired
 tokens, RBAC on every mutating endpoint, price supersession, and the
-core archival-fidelity guarantee — changing a price after archiving a
+core archival-fidelity guarantee - changing a price after archiving a
 menu does not alter what the archived menu returns.
 
 ---
@@ -213,7 +213,7 @@ tests/                    pytest + in-memory SQLite fixtures
 Things I'd build if this were more than a portfolio piece:
 
 - **Orders + tickets.** The data model already supports "which item and
-  which price" — adding an Order table would close the loop from menu
+  which price" - adding an Order table would close the loop from menu
   to kitchen.
 - **Soft-deleted menu items** should probably keep their price history
   accessible through a dedicated endpoint rather than just disappearing
@@ -223,13 +223,10 @@ Things I'd build if this were more than a portfolio piece:
 - **Per-tenant isolation.** A `restaurant_id` column on every table
   plus a middleware that scopes reads/writes to the caller's tenant.
 - **Event log.** Right now archival and price changes are inferable
-  from row states but not auditable — an append-only events table
+  from row states but not auditable - an append-only events table
   keyed by actor would fix that.
 - **Caching.** `GET /menus/{id}/items` is immutable once its menu is
   archived; it's an obvious candidate for aggressive HTTP caching.
 
----
 
-## License
-
-MIT — see [LICENSE](LICENSE).
+Built by Omar Rifaie - [github.com/omarrifaie](https://github.com/omarrifaie) · [linkedin.com/in/omar-rifaie-](https://linkedin.com/in/omar-rifaie-)
