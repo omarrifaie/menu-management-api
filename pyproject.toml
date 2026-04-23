@@ -1,0 +1,52 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "menu-management-api"
+version = "1.0.0"
+description = "A FastAPI + PostgreSQL service for managing restaurant menus, daily specials, and versioned menu archives."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Omar Rifaie" }]
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.29",
+    "sqlalchemy>=2.0",
+    "alembic>=1.13",
+    "pydantic[email]>=2.6",
+    "pydantic-settings>=2.2",
+    "python-jose[cryptography]>=3.3",
+    "passlib[bcrypt]>=1.7.4",
+    # passlib 1.7.4 (2020) uses bcrypt.__about__, which was removed in
+    # bcrypt 4.1. Pin below 4.1 until passlib ships a fix.
+    "bcrypt<4.1",
+    "python-multipart>=0.0.9",
+]
+
+[project.optional-dependencies]
+# SQLite works out of the box from the core dependencies above. Install the
+# `postgres` extra in production, or `dev` for local development + tests.
+postgres = ["psycopg[binary]>=3.1"]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=4.1",
+    "httpx>=0.27",
+    "ruff>=0.4",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-ra --strict-markers"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
