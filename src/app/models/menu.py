@@ -54,7 +54,16 @@ class Menu(Base):
 
 
 class MenuItemInMenu(Base):
-    """Snapshot row — freezes (menu, item, price) at publish time."""
+    """Snapshot row — freezes (menu, item, price) at publish time.
+
+    Fidelity caveat: only the *price* is frozen via ``price_id``. The
+    item's ``name``, ``description``, and ``prep_time_minutes`` are read
+    live from :class:`MenuItem` when a menu is rendered, so edits to
+    those fields will show up in previously-archived menus. This is a
+    deliberate trade-off — menu snapshots preserve what customers paid,
+    not every cosmetic field. See README "Versioned menu archives" for
+    more.
+    """
 
     __tablename__ = "menu_item_in_menu"
 

@@ -2,16 +2,18 @@
 
 Run from the project root::
 
-    python -m scripts.seed
+    python -m scripts.seed            # seed into existing tables
+    python -m scripts.seed --reset    # drop everything, recreate tables, seed
 
-The script is idempotent in the sense that it creates a fresh set of
-tables if they don't exist — but it does not deduplicate data, so
-running it twice against the same database will either double up or
-fail on unique constraints. Use it on an empty database.
+The script relies on Alembic to create the schema — run ``alembic upgrade
+head`` first. If the ``users`` table is missing we bail out with a
+pointer to the migration command. If the admin email already exists the
+script exits cleanly; pass ``--reset`` to wipe and reseed.
 """
 
 from __future__ import annotations
 
+import argparse
 import sys
 from datetime import datetime, timezone
 
@@ -22,6 +24,8 @@ ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
+
+from sqlalchemy import inspect, select  # noqa: E402
 
 from app.auth.passwords import hash_password  # noqa: E402
 from app.db import get_engine, get_session_factory  # noqa: E402
@@ -42,12 +46,18 @@ STAFF_EMAIL = "staff@demo.local"
 STAFF_PASSWORD = "staffpass123"
 
 
-def main() -> None:
-    engine = get_engine()
-    Base.metadata.create_all(engine)
-    Session = get_session_factory()
+def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--reset",
+        action="store_true",
+        help="Drop and recreate all tables before seeding (destroys existing data).",
+    )
+    return parser.parse_args(argv)
 
-    with Session() as db:
+
+def _seed(session_factory) -> None:
+    with session_factory() as db:
         now = datetime.now(timezone.utc)
 
         admin = User(
@@ -128,6 +138,43 @@ def main() -> None:
 
         db.commit()
 
+
+def main(argv: list[str] | None = None) -> int:
+    args = _parse_args(argv)
+    engine = get_engine()
+
+    # Schema is owned by Alembic — seed.py must not drift from migrations.
+    # If the tables aren't there, refuse rather than silently creating
+    # whatever the current ORM metadata looks like.
+    if args.reset:
+        Base.metadata.drop_all(engine)
+        Base.metadata.create_all(engine)
+    else:
+        inspector = inspect(engine)
+        if "users" not in inspector.get_table_names():
+            print(
+                "Schema not found: did you run `alembic upgrade head` first?\n"
+                "  (Or pass --reset to drop+recreate tables from ORM metadata.)",
+                file=sys.stderr,
+            )
+            return 1
+
+    session_factory = get_session_factory()
+
+    # Idempotency check — refuse to double-seed if the admin user already exists.
+    if not args.reset:
+        with session_factory() as db:
+            existing_admin = db.scalar(select(User).where(User.email == ADMIN_EMAIL))
+            if existing_admin is not None:
+                print(
+                    f"Database already seeded (found {ADMIN_EMAIL}). "
+                    "Run with --reset to wipe and reseed.",
+                    file=sys.stderr,
+                )
+                return 0
+
+    _seed(session_factory)
+
     print("\n=== Seed complete ===")
     print(f"  Admin: {ADMIN_EMAIL} / {ADMIN_PASSWORD}")
     print(f"  Staff: {STAFF_EMAIL} / {STAFF_PASSWORD}")
@@ -135,7 +182,8 @@ def main() -> None:
     print("  1. uvicorn app.main:app --reload")
     print("  2. Open http://localhost:8000/docs")
     print("  3. Authorize with the admin credentials above.")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

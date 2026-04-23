@@ -96,24 +96,23 @@ def delete_category(
 ) -> None:
     """Hard-delete a category.
 
-    Fails with 409 if any active menu items still point at it. Deactivate
-    or reassign those items first. (Inactive items are ignored — they
-    can't be shown to customers anyway.)
+    Fails with 409 if any menu items still point at it (active or inactive).
+    The DB constraint is ON DELETE RESTRICT across all children, so the
+    pre-check must match or a commit with only inactive children would
+    bubble up as an unhandled IntegrityError → 500. Reassign or hard-delete
+    those items first.
     """
     category = db.get(Category, category_id)
     if category is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Category not found")
 
-    active_children = db.scalar(
-        select(MenuItem)
-        .where(MenuItem.category_id == category_id)
-        .where(MenuItem.is_active.is_(True))
-        .limit(1)
+    child = db.scalar(
+        select(MenuItem).where(MenuItem.category_id == category_id).limit(1)
     )
-    if active_children is not None:
+    if child is not None:
         raise HTTPException(
             status.HTTP_409_CONFLICT,
-            "Category still has active menu items; deactivate them first",
+            "Category still has menu items; reassign or delete them first",
         )
 
     db.delete(category)

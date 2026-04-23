@@ -17,7 +17,12 @@ is supported out of the box for zero-setup demos.
 - **Versioned menu archives.** Publishing a menu snapshots the current
   items and their current prices into a join table. Prices can change
   afterward without altering archived menus; historical versions remain
-  faithful to what customers originally saw.
+  faithful to what customers originally saw. *Only price is frozen* —
+  an item's `name`, `description`, and `prep_time_minutes` are read
+  live from the item table when a menu is rendered, so later edits to
+  those fields are reflected in previously-archived menus. The
+  commercial fact (what a customer paid) is preserved; cosmetic fields
+  track the live item.
 - **Daily specials** are first-class via a boolean flag on menu items
   and a `?daily_specials_only=true` filter on the list endpoint.
 - **Role-based JWT auth.** Two roles: `admin` (does everything) and

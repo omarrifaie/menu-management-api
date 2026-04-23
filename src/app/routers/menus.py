@@ -107,6 +107,12 @@ def publish_menu(
         or 0
     ) + 1
 
+    if len(set(payload.item_ids)) != len(payload.item_ids):
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            "Duplicate item ids in payload",
+        )
+
     menu = Menu(
         name=payload.name,
         version=next_version,
@@ -116,15 +122,7 @@ def publish_menu(
     db.add(menu)
     db.flush()  # populate menu.id for the FK on menu_item_in_menu rows
 
-    seen: set[int] = set()
     for item_id in payload.item_ids:
-        if item_id in seen:
-            raise HTTPException(
-                status.HTTP_422_UNPROCESSABLE_ENTITY,
-                f"Duplicate item id in payload: {item_id}",
-            )
-        seen.add(item_id)
-
         item = db.get(MenuItem, item_id)
         if item is None or not item.is_active:
             raise HTTPException(
