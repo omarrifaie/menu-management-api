@@ -32,6 +32,9 @@ class Menu(Base):
         DateTime(timezone=True),
         nullable=True,
     )
+    # ondelete="RESTRICT" preserves the audit trail — a user who has ever
+    # published a menu cannot be deleted without first reassigning or
+    # removing those rows.
     created_by: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="RESTRICT"),
         nullable=False,

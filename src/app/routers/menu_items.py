@@ -23,15 +23,31 @@ router = APIRouter(prefix="/menu-items", tags=["menu-items"])
 
 
 def _attach_current_price(db: Session, item: MenuItem) -> MenuItemRead:
-    """Project a MenuItem + its current price into MenuItemRead."""
+    """Project a MenuItem + its current price into MenuItemRead.
+
+    Single ``model_validate`` pass: we read the item's scalar columns
+    directly off the ORM instance rather than going through the
+    validate → dump → re-validate round trip just to stitch in one
+    extra field.
+    """
     current_price = db.scalar(
         select(Price.amount_cents)
         .where(Price.menu_item_id == item.id)
         .where(Price.effective_to.is_(None))
     )
-    data = MenuItemRead.model_validate(item).model_dump()
-    data["current_price_cents"] = current_price
-    return MenuItemRead.model_validate(data)
+    return MenuItemRead.model_validate(
+        {
+            "id": item.id,
+            "category_id": item.category_id,
+            "name": item.name,
+            "description": item.description,
+            "prep_time_minutes": item.prep_time_minutes,
+            "is_daily_special": item.is_daily_special,
+            "is_active": item.is_active,
+            "created_at": item.created_at,
+            "current_price_cents": current_price,
+        }
+    )
 
 
 @router.get("", response_model=list[MenuItemRead], summary="List menu items")

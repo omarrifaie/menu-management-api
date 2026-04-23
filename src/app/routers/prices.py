@@ -73,6 +73,15 @@ def create_price(
 
     now = datetime.now(UTC)
 
+    # Two-step "close old price, insert new" is correct under a single
+    # transaction because every statement below runs inside the Session's
+    # implicit BEGIN. Under Postgres's default READ COMMITTED isolation,
+    # two concurrent POSTs to this endpoint will still serialize on the
+    # Price row-level write lock — the second write sees the first's
+    # closed row rather than a phantom second "open" row. If you ever
+    # move to stronger guarantees, consider SELECT ... FOR UPDATE on the
+    # open row; for now default isolation plus the transaction boundary
+    # is sufficient. (SQLite is single-writer so the question is moot there.)
     open_price = db.scalar(
         select(Price)
         .where(Price.menu_item_id == item_id)

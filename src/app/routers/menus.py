@@ -22,6 +22,11 @@ from app.models.price import Price
 from app.models.user import User
 from app.schemas.menu import MenuCreate, MenuEntryRead, MenuRead
 
+# Style convention used across routers: if the handler does not consume
+# the authenticated ``User`` object, enforce auth via the router decorator's
+# ``dependencies=[Depends(...)]`` argument. If the handler needs ``user.id``
+# (e.g. to stamp ``created_by``), inject it as an explicit parameter.
+
 router = APIRouter(prefix="/menus", tags=["menus"])
 
 
@@ -89,6 +94,8 @@ def get_menu_items(menu_id: int, db: Annotated[Session, Depends(get_db)]) -> lis
 def publish_menu(
     payload: MenuCreate,
     db: Annotated[Session, Depends(get_db)],
+    # `admin` is consumed via `admin.id` to stamp `created_by`, so it's
+    # injected as a named parameter rather than hidden in `dependencies=`.
     admin: Annotated[User, Depends(require_admin)],
 ) -> MenuRead:
     """Create a new :class:`Menu` and snapshot its items.
@@ -155,12 +162,12 @@ def publish_menu(
 @router.post(
     "/{menu_id}/archive",
     response_model=MenuRead,
+    dependencies=[Depends(require_admin)],
     summary="Archive a menu (admin)",
 )
 def archive_menu(
     menu_id: int,
     db: Annotated[Session, Depends(get_db)],
-    _: Annotated[User, Depends(require_admin)],
 ) -> MenuRead:
     """Mark a menu as archived. Terminal — archival cannot be undone."""
     menu = db.get(Menu, menu_id)
