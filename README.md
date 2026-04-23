@@ -49,12 +49,12 @@ is supported out of the box for zero-setup demos.
                                    │
        ┌───────────┬───────────────┼────────────┬──────────────┐
        │           │               │            │              │
- ┌───────────┐ ┌──────────┐ ┌─────────────┐ ┌─────────┐  ┌───────────┐
- │  /auth    │ │/categories│ │/menu-items  │ │ /prices │  │  /menus   │
- │ register  │ │   CRUD   │ │  + filters  │ │ history │  │  publish  │
- │  login    │ │          │ │             │ │ set new │  │  archive  │
- │  /me      │ │          │ │             │ │         │  │  /items   │
- └─────┬─────┘ └────┬─────┘ └──────┬──────┘ └────┬────┘  └─────┬─────┘
+ ┌───────────┐ ┌──────────┐ ┌─────────────┐ ┌─────────┐  ┌───────────────────┐
+ │  /auth    │ │/categories│ │/menu-items  │ │ /prices │  │      /menus       │
+ │ register  │ │   CRUD   │ │  + filters  │ │ history │  │      publish      │
+ │  login    │ │          │ │             │ │ set new │  │      archive      │
+ │  /me      │ │          │ │             │ │         │  │ /menus/{id}/items │
+ └─────┬─────┘ └────┬─────┘ └──────┬──────┘ └────┬────┘  └─────────┬─────────┘
        │            │              │             │             │
        ▼            ▼              ▼             ▼             ▼
    ┌──────────────────────────────────────────────────────────────┐
@@ -131,16 +131,16 @@ alembic upgrade head
 
 ## API overview
 
-| Method | Path                              | Auth      | What it does                             |
-|--------|-----------------------------------|-----------|------------------------------------------|
-| POST   | `/auth/register`                  | see below | Register a new user                      |
+| Method | Path                              | Auth                                                                    | What it does                             |
+|--------|-----------------------------------|-------------------------------------------------------------------------|------------------------------------------|
+| POST   | `/auth/register`                  | Public in dev (`DEV_ALLOW_OPEN_REGISTRATION=true`), admin-only in prod | Register a new user                      |
 | POST   | `/auth/login`                     | public    | Exchange credentials for a JWT           |
 | GET    | `/auth/me`                        | any user  | Return the current user                  |
 | GET    | `/categories`                     | public    | List categories                          |
 | POST   | `/categories`                     | admin     | Create category                          |
 | PATCH  | `/categories/{id}`                | admin     | Update category                          |
 | DELETE | `/categories/{id}`                | admin     | Delete (blocked if active items exist)   |
-| GET    | `/menu-items`                     | public    | List items (filters: category / specials)|
+| GET    | `/menu-items`                     | public    | List items (filters: `category_id`, `include_inactive`, `daily_specials_only`) |
 | GET    | `/menu-items/{id}`                | public    | Fetch one item + its current price       |
 | POST   | `/menu-items`                     | staff     | Create a menu item                       |
 | PATCH  | `/menu-items/{id}`                | admin     | Edit a menu item                         |
@@ -153,8 +153,6 @@ alembic upgrade head
 | POST   | `/menus`                          | admin     | Publish a new menu version               |
 | POST   | `/menus/{id}/archive`             | admin     | Archive a menu (terminal)                |
 
-`/auth/register` is open when `DEV_ALLOW_OPEN_REGISTRATION=true` (dev
-default) and admin-only otherwise.
 
 ---
 
@@ -184,8 +182,11 @@ default) and admin-only otherwise.
     │                         └────────────────────────┘
 ```
 
-Token payload: `{sub: user_id, role: "admin" | "staff", iat, exp}`.
-Default expiry is 60 minutes; override with `JWT_EXPIRE_MINUTES`.
+Token payload: `{sub: "<user_id>", role: "admin" | "staff", iat, exp}`.
+`sub` is a **string** (the stringified user ID), following the JWT spec
+recommendation — clients that treat it as an integer will end up with
+accidental `"1" != 1` bugs. Default expiry is 60 minutes; override with
+`JWT_EXPIRE_MINUTES`.
 
 ---
 
@@ -193,7 +194,7 @@ Default expiry is 60 minutes; override with `JWT_EXPIRE_MINUTES`.
 
 ```bash
 pytest                          # run the suite
-pytest --cov=src/app            # with coverage
+pytest --cov=app                # with coverage (pythonpath = ["src"] is set in pyproject.toml)
 ```
 
 The test suite covers auth happy path + credential failures + expired
@@ -228,9 +229,13 @@ Things I'd build if this were more than a portfolio piece:
 - **Orders + tickets.** The data model already supports "which item and
   which price" - adding an Order table would close the loop from menu
   to kitchen.
-- **Soft-deleted menu items** should probably keep their price history
-  accessible through a dedicated endpoint rather than just disappearing
-  from `?include_inactive=false` responses.
+- **True soft-delete for menu items.** Today `is_active` acts as a
+  soft-*hide* (filtered out of default listings) while `DELETE` is a
+  hard-delete that cascades price history and is blocked by archived
+  menus. A proper soft-delete — `deleted_at` timestamps plus a
+  dedicated endpoint to browse the price history of removed items —
+  would be a natural next step. Not a current bug; the current model
+  is intentional and documented.
 - **Image uploads** for items, persisted to object storage with signed
   URLs served through the item response.
 - **Per-tenant isolation.** A `restaurant_id` column on every table
