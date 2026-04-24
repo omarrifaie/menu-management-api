@@ -2,8 +2,10 @@
 
 [![Tests passing](https://github.com/omarrifaie/menu-management-api/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/omarrifaie/menu-management-api/actions/workflows/ci.yml)
 
-A FastAPI REST service for managing restaurant menus — categories, menu
-items, prices, and versioned menu snapshots — with role-based JWT auth
+> *Note: This repository is a cleaned-up portfolio rebuild of an internal tool I originally developed at El Senor de Los Tacos in 2025.*
+
+A FastAPI REST service for managing restaurant menus - categories, menu
+items, prices, and versioned menu snapshots - with role-based JWT auth
 and an OpenAPI-documented surface. Built as a portfolio project.
 
 **Stack:** Python 3.11 · FastAPI · SQLAlchemy 2 · Pydantic v2 · Alembic ·
@@ -14,12 +16,12 @@ is supported out of the box for zero-setup demos.
 
 ## Features
 
-- **Full CRUD across three resource types** — categories, menu items,
-  and prices — with a fourth "versioned menu" resource built on top.
+- **Full CRUD across three resource types** - categories, menu items,
+  and prices - with a fourth "versioned menu" resource built on top.
 - **Versioned menu archives.** Publishing a menu snapshots the current
   items and their current prices into a join table. Prices can change
   afterward without altering archived menus; historical versions remain
-  faithful to what customers originally saw. *Only price is frozen* —
+  faithful to what customers originally saw. *Only price is frozen* -
   an item's `name`, `description`, and `prep_time_minutes` are read
   live from the item table when a menu is rendered, so later edits to
   those fields are reflected in previously-archived menus. The
@@ -34,7 +36,7 @@ is supported out of the box for zero-setup demos.
   with `effective_from` / `effective_to`, so history is preserved
   without duplicating it onto items or menus. A menu snapshot points at
   a specific `price_id` rather than copying the amount.
-- **OpenAPI/Swagger** at `/docs` and `/redoc` — title, tags, and per-
+- **OpenAPI/Swagger** at `/docs` and `/redoc` - title, tags, and per-
   route descriptions are all curated rather than auto-inferred.
 
 ---
@@ -111,7 +113,7 @@ uvicorn app.main:app --reload
 ```
 
 `alembic/env.py` resolves `sqlalchemy.url` from `Settings` at runtime, so
-configuring `DATABASE_URL` in `.env` is all that's needed — `alembic.ini`
+configuring `DATABASE_URL` in `.env` is all that's needed - `alembic.ini`
 is intentionally left blank for that field.
 
 Then open **http://localhost:8000/docs** and authorize with the
@@ -119,7 +121,7 @@ credentials printed by the seed script.
 
 ### Switching to PostgreSQL
 
-One environment variable — no code changes:
+One environment variable - no code changes:
 
 ```bash
 export DATABASE_URL="postgresql+psycopg://user:pass@localhost:5432/menu"
@@ -184,7 +186,7 @@ alembic upgrade head
 
 Token payload: `{sub: "<user_id>", role: "admin" | "staff", iat, exp}`.
 `sub` is a **string** (the stringified user ID), following the JWT spec
-recommendation — clients that treat it as an integer will end up with
+recommendation - clients that treat it as an integer will end up with
 accidental `"1" != 1` bugs. Default expiry is 60 minutes; override with
 `JWT_EXPIRE_MINUTES`.
 
