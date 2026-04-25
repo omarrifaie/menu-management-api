@@ -141,10 +141,10 @@ alembic upgrade head
 | GET    | `/categories`                     | public    | List categories                          |
 | POST   | `/categories`                     | admin     | Create category                          |
 | PATCH  | `/categories/{id}`                | admin     | Update category                          |
-| DELETE | `/categories/{id}`                | admin     | Delete (blocked if active items exist)   |
+| DELETE | `/categories/{id}`                | admin     | Delete (blocked if any menu items reference it) |
 | GET    | `/menu-items`                     | public    | List items (filters: `category_id`, `include_inactive`, `daily_specials_only`) |
 | GET    | `/menu-items/{id}`                | public    | Fetch one item + its current price       |
-| POST   | `/menu-items`                     | staff     | Create a menu item                       |
+| POST   | `/menu-items`                     | staff or admin | Create a menu item                  |
 | PATCH  | `/menu-items/{id}`                | admin     | Edit a menu item                         |
 | DELETE | `/menu-items/{id}`                | admin     | Delete (blocked if referenced by a menu) |
 | GET    | `/menu-items/{id}/prices`         | public    | Price history for an item                |
@@ -247,6 +247,9 @@ Things I'd build if this were more than a portfolio piece:
   keyed by actor would fix that.
 - **Caching.** `GET /menus/{id}/items` is immutable once its menu is
   archived; it's an obvious candidate for aggressive HTTP caching.
+- **Rate limiting.** Login and registration in particular would benefit
+  from per-IP throttling — currently any caller can hammer
+  `/auth/login` as fast as bcrypt will let them.
 
 
 Built by Omar Rifaie - [github.com/omarrifaie](https://github.com/omarrifaie) · [linkedin.com/in/omar-rifaie-](https://linkedin.com/in/omar-rifaie-)
