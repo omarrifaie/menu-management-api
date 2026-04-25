@@ -39,6 +39,11 @@ class Menu(Base):
         ForeignKey("users.id", ondelete="RESTRICT"),
         nullable=False,
     )
+    # Preserves the audit trail of who archived the menu.
+    archived_by: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="RESTRICT"),
+        nullable=True,
+    )
 
     entries: Mapped[list[MenuItemInMenu]] = relationship(
         back_populates="menu",

@@ -29,6 +29,7 @@ class MenuRead(BaseModel):
     published_at: datetime
     archived_at: datetime | None
     created_by: int
+    archived_by: int | None = None
 
 
 class MenuEntryRead(BaseModel):

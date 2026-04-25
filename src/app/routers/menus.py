@@ -162,12 +162,14 @@ def publish_menu(
 @router.post(
     "/{menu_id}/archive",
     response_model=MenuRead,
-    dependencies=[Depends(require_admin)],
     summary="Archive a menu (admin)",
 )
 def archive_menu(
     menu_id: int,
     db: Annotated[Session, Depends(get_db)],
+    # `admin` is consumed via `admin.id` to stamp `archived_by`, so it's
+    # injected as a named parameter rather than hidden in `dependencies=`.
+    admin: Annotated[User, Depends(require_admin)],
 ) -> MenuRead:
     """Mark a menu as archived. Terminal — archival cannot be undone."""
     menu = db.get(Menu, menu_id)
@@ -176,6 +178,7 @@ def archive_menu(
     if menu.archived_at is not None:
         raise HTTPException(status.HTTP_409_CONFLICT, "Menu is already archived")
     menu.archived_at = datetime.now(UTC)
+    menu.archived_by = admin.id
     db.commit()
     db.refresh(menu)
     return MenuRead.model_validate(menu)
