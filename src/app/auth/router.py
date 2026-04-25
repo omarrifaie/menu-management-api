@@ -98,6 +98,7 @@ def login(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
     token, expires_in = create_access_token(

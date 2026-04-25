@@ -11,7 +11,11 @@ from fastapi import FastAPI
 
 from app import __version__
 from app.auth.router import router as auth_router
-from app.config import DEFAULT_JWT_SECRET, get_settings
+from app.config import (
+    KNOWN_INSECURE_JWT_SECRETS,
+    MIN_PRODUCTION_JWT_SECRET_LENGTH,
+    get_settings,
+)
 from app.routers.categories import router as categories_router
 from app.routers.menu_items import router as menu_items_router
 from app.routers.menus import router as menus_router
@@ -76,19 +80,32 @@ environment variable.
 
 
 def _guard_against_default_secret_in_production() -> None:
-    """Refuse to start if a real DB is paired with the dev JWT secret.
+    """Refuse to start if a real DB is paired with an insecure JWT secret.
 
-    SQLite is the zero-setup local default, so we allow the dev secret
-    there. Any other driver (Postgres, MySQL, …) almost certainly means
-    a real deployment — shipping with the committed default would let
-    anyone mint valid admin tokens.
+    SQLite is the zero-setup local default, so we accept any secret there.
+    Any other driver (Postgres, MySQL, …) almost certainly means a real
+    deployment, and we reject two flavors of insecure secret:
+
+    * Anything in :data:`KNOWN_INSECURE_JWT_SECRETS` — strings that ship
+      in this repository (the in-code default and the ``.env.example``
+      placeholder) and are therefore effectively public.
+    * Anything shorter than :data:`MIN_PRODUCTION_JWT_SECRET_LENGTH`
+      characters — the length floor catches future placeholders we
+      haven't anticipated and any human-typed secret that's trivially
+      brute-forceable.
     """
     settings = get_settings()
-    if not settings.is_sqlite and settings.jwt_secret == DEFAULT_JWT_SECRET:
+    if settings.is_sqlite:
+        return
+
+    secret = settings.jwt_secret
+    if secret in KNOWN_INSECURE_JWT_SECRETS or len(secret) < MIN_PRODUCTION_JWT_SECRET_LENGTH:
         raise RuntimeError(
-            "JWT_SECRET is set to the dev default while DATABASE_URL points at "
-            "a non-SQLite database. Refusing to start. Generate a real secret "
-            "with: python -c \"import secrets; print(secrets.token_urlsafe(48))\""
+            "JWT_SECRET is insecure (a known placeholder or shorter than "
+            f"{MIN_PRODUCTION_JWT_SECRET_LENGTH} characters) while DATABASE_URL "
+            "points at a non-SQLite database. Refusing to start. Generate a "
+            "real secret with: "
+            "python -c \"import secrets; print(secrets.token_urlsafe(48))\""
         )
 
 

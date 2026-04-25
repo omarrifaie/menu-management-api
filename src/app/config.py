@@ -20,6 +20,19 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 DEFAULT_JWT_SECRET = "dev-only-secret-do-not-use-in-production"
 
+# Strings that ship in this repository (the in-code default plus the
+# placeholder in .env.example) and so are effectively public. A non-SQLite
+# deployment that boots with any of these would let anyone mint admin
+# tokens. The list catches the secrets we know about; the 32-char minimum
+# (enforced separately) catches anything we haven't anticipated.
+KNOWN_INSECURE_JWT_SECRETS = frozenset(
+    {
+        DEFAULT_JWT_SECRET,
+        "change-me-to-a-long-random-string",
+    }
+)
+MIN_PRODUCTION_JWT_SECRET_LENGTH = 32
+
 
 class Settings(BaseSettings):
     """Strongly-typed view of the process environment."""
