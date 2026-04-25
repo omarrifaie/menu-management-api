@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Index, Integer
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, utcnow
@@ -48,6 +48,19 @@ class Price(Base):
     __table_args__ = (
         # Helps the "give me the current price for each item" query.
         Index("ix_prices_item_open", "menu_item_id", "effective_to"),
+        # Partial unique index — at most one open price row per item. The
+        # database, not the application, is the source of truth here: two
+        # concurrent POST /menu-items/{id}/prices requests that both pass
+        # the "is there an open row?" check will collide on this index and
+        # one will lose with an IntegrityError, which the route translates
+        # to HTTP 409.
+        Index(
+            "ix_prices_one_open_per_item",
+            "menu_item_id",
+            unique=True,
+            postgresql_where=text("effective_to IS NULL"),
+            sqlite_where=text("effective_to IS NULL"),
+        ),
     )
 
     @property

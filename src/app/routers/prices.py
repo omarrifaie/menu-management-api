@@ -12,6 +12,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.auth.dependencies import require_admin
@@ -73,15 +74,15 @@ def create_price(
 
     now = datetime.now(UTC)
 
-    # Two-step "close old price, insert new" is correct under a single
-    # transaction because every statement below runs inside the Session's
-    # implicit BEGIN. Under Postgres's default READ COMMITTED isolation,
-    # two concurrent POSTs to this endpoint will still serialize on the
-    # Price row-level write lock — the second write sees the first's
-    # closed row rather than a phantom second "open" row. If you ever
-    # move to stronger guarantees, consider SELECT ... FOR UPDATE on the
-    # open row; for now default isolation plus the transaction boundary
-    # is sufficient. (SQLite is single-writer so the question is moot there.)
+    # The "close the old open row, insert a new open row" pair is not
+    # safe on its own under READ COMMITTED — two concurrent transactions
+    # could each read the same open row, each UPDATE its effective_to,
+    # and each INSERT a new row, leaving two rows with effective_to NULL.
+    # The partial unique index ix_prices_one_open_per_item (see migration
+    # 0002) enforces "at most one open row per item" at the database
+    # level: the second transaction's INSERT fails with IntegrityError on
+    # commit, which we translate to HTTP 409 below so the client can
+    # retry.
     open_price = db.scalar(
         select(Price)
         .where(Price.menu_item_id == item_id)
@@ -98,6 +99,13 @@ def create_price(
         created_by=admin.id,
     )
     db.add(new_price)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "another price update for this item is in progress, please retry",
+        ) from exc
     db.refresh(new_price)
     return PriceRead.model_validate(new_price)

@@ -2,7 +2,16 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
+import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy.exc import IntegrityError
+
+from app.models.category import Category
+from app.models.menu_item import MenuItem
+from app.models.price import Price
+from app.models.user import User, UserRole
 
 
 def _create_item(
@@ -83,3 +92,48 @@ def test_price_history_is_public(client: TestClient, admin_token, auth_header) -
     resp = client.get(f"/menu-items/{item_id}/prices")
     assert resp.status_code == 200
     assert len(resp.json()) == 1
+
+
+def test_db_rejects_two_open_prices_for_same_item(db) -> None:
+    """The partial unique index forbids two open price rows for one item.
+
+    True concurrent inserts are awkward to simulate against in-memory
+    SQLite (the test fixtures share a single underlying connection via
+    ``StaticPool``), so we exercise the invariant directly: insert two
+    rows with ``effective_to IS NULL`` for the same menu item and confirm
+    the second one fails the unique constraint. This is exactly the
+    state two concurrent writers would race into, just without the race.
+    """
+    admin = User(email="a@x.com", hashed_password="x", role=UserRole.ADMIN)
+    db.add(admin)
+    db.flush()
+    cat = Category(name="C")
+    db.add(cat)
+    db.flush()
+    item = MenuItem(category_id=cat.id, name="Burger")
+    db.add(item)
+    db.flush()
+
+    now = datetime.now(UTC)
+    db.add(
+        Price(
+            menu_item_id=item.id,
+            amount_cents=1000,
+            effective_from=now,
+            effective_to=None,
+            created_by=admin.id,
+        )
+    )
+    db.flush()
+
+    db.add(
+        Price(
+            menu_item_id=item.id,
+            amount_cents=1100,
+            effective_from=now,
+            effective_to=None,
+            created_by=admin.id,
+        )
+    )
+    with pytest.raises(IntegrityError):
+        db.flush()
