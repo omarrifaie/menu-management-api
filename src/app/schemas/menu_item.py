@@ -21,7 +21,18 @@ class MenuItemCreate(MenuItemBase):
 
 
 class MenuItemUpdate(BaseModel):
-    """Partial update for ``PATCH /menu-items/{id}`` (admin only)."""
+    """Partial update for ``PATCH /menu-items/{id}`` (admin only).
+
+    Known limitation: ``description`` here cannot distinguish "leave the
+    existing value alone" from "clear it to NULL" — both arrive as
+    ``None`` and the route only writes fields that were explicitly set
+    in the request payload (``model_dump(exclude_unset=True)``), so a
+    client that omits ``description`` and a client that sends
+    ``description: null`` look the same to the server. Acceptable for
+    the current scope; clearing the field would need a sentinel value
+    or a different update protocol (e.g. PUT with a full payload, or a
+    JSON-Merge-Patch-style ``__unset__`` marker).
+    """
 
     category_id: int | None = None
     name: str | None = Field(default=None, min_length=1, max_length=150)

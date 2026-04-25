@@ -92,16 +92,15 @@ def test_me_returns_current_user(client: TestClient, admin_token, auth_header) -
     assert resp.json()["role"] == "admin"
 
 
-def test_closed_registration_requires_admin(app, staff_token, auth_header) -> None:
+def test_closed_registration_requires_admin(app, settings, staff_token, auth_header) -> None:
     """With open registration off, only admins can register new users."""
-    from app.config import Settings, get_settings
+    from app.config import get_settings
 
     # Flip the flag by overriding the dependency for this test only.
-    closed = Settings(
-        database_url="sqlite+pysqlite:///:memory:",
-        jwt_secret="test-secret-for-unit-tests-only",
-        dev_allow_open_registration=False,
-    )
+    # database_url is intentionally not in the override — the engine is
+    # already built against the test DB via fixtures, so changing it here
+    # would have no effect and would only mislead future readers.
+    closed = settings.model_copy(update={"dev_allow_open_registration": False})
     app.dependency_overrides[get_settings] = lambda: closed
 
     # Reuse a test client bound to this reconfigured app.

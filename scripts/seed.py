@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import argparse
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 # Allow running as `python scripts/seed.py` in addition to `python -m scripts.seed`.
 from pathlib import Path
@@ -58,7 +58,7 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def _seed(session_factory) -> None:
     with session_factory() as db:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         admin = User(
             email=ADMIN_EMAIL,
