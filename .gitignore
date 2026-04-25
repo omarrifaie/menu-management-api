@@ -40,3 +40,7 @@ coverage.xml
 .vscode/
 *.swp
 .DS_Store
+
+# ---- Windows ----
+desktop.ini
+Thumbs.db
