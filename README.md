@@ -1,7 +1,11 @@
 # Menu Management API
 
+![Python](https://img.shields.io/badge/python-3.11+-3ddc84?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-ff7a3d?logo=fastapi&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/database-PostgreSQL-4c9fff?logo=postgresql&logoColor=white)
+![License: MIT](https://img.shields.io/badge/license-MIT-ff7a3d)
+![Tests](https://img.shields.io/badge/tests-26%20passing-3ddc84)
 [![Tests passing](https://github.com/omarrifaie/menu-management-api/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/omarrifaie/menu-management-api/actions/workflows/ci.yml)
-
 > *Note: This repository is a cleaned-up portfolio rebuild of an internal tool I originally developed at El Senor de Los Tacos in 2025.*
 
 A FastAPI REST service for managing restaurant menus - categories, menu
