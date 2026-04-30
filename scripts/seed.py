@@ -14,6 +14,8 @@ script exits cleanly; pass ``--reset`` to wipe and reseed.
 from __future__ import annotations
 
 import argparse
+import os
+import secrets
 import sys
 from datetime import UTC, datetime
 
@@ -41,9 +43,16 @@ from app.models import (  # noqa: E402
 )
 
 ADMIN_EMAIL = "admin@demo.local"
-ADMIN_PASSWORD = "adminpass123"
 STAFF_EMAIL = "staff@demo.local"
-STAFF_PASSWORD = "staffpass123"
+
+
+def _resolve_password(env_var: str, label: str) -> str:
+    value = os.environ.get(env_var)
+    if value:
+        return value
+    generated = secrets.token_urlsafe(16)
+    print(f"{label}: generated random password (set {env_var} to override): {generated}")
+    return generated
 
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -56,18 +65,18 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def _seed(session_factory) -> None:
+def _seed(session_factory, admin_password: str, staff_password: str) -> None:
     with session_factory() as db:
         now = datetime.now(UTC)
 
         admin = User(
             email=ADMIN_EMAIL,
-            hashed_password=hash_password(ADMIN_PASSWORD),
+            hashed_password=hash_password(admin_password),
             role=UserRole.ADMIN,
         )
         staff = User(
             email=STAFF_EMAIL,
-            hashed_password=hash_password(STAFF_PASSWORD),
+            hashed_password=hash_password(staff_password),
             role=UserRole.STAFF,
         )
         db.add_all([admin, staff])
@@ -173,11 +182,13 @@ def main(argv: list[str] | None = None) -> int:
                 )
                 return 0
 
-    _seed(session_factory)
+    admin_password = _resolve_password("SEED_ADMIN_PASSWORD", "Admin")
+    staff_password = _resolve_password("SEED_STAFF_PASSWORD", "Staff")
+    _seed(session_factory, admin_password, staff_password)
 
     print("\n=== Seed complete ===")
-    print(f"  Admin: {ADMIN_EMAIL} / {ADMIN_PASSWORD}")
-    print(f"  Staff: {STAFF_EMAIL} / {STAFF_PASSWORD}")
+    print(f"  Admin email: {ADMIN_EMAIL}")
+    print(f"  Staff email: {STAFF_EMAIL}")
     print("\nNext steps:")
     print("  1. uvicorn app.main:app --reload")
     print("  2. Open http://localhost:8000/docs")
